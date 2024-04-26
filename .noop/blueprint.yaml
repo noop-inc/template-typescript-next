@@ -1,0 +1,37 @@
+name: Next Site
+components:
+  - name: NextSite
+    type: service
+    image: node:20-alpine
+    port: 3000
+    build:
+      # 👇 intentional/selective ordering of 'copy' and 'run' steps
+      # will make it possible to take advantage of cached build
+      # layers in Noop Workshop (TLDR - speedier subsequent builds!)
+      steps:
+        # first copy over dependency files and install...
+        - copy: [package.json, yarn.lock]
+        - run: yarn install --immutable
+        # ...then copy over project files before generating build assets
+        - copy: [next.config.mjs, tsconfig.json]
+        - copy: public/
+        - copy: src/
+        - run: yarn build
+    runtime:
+      command: yarn start
+  # NOTE: Uncomment below to produce a statically hosted site
+  # - name: NextStatic
+  #   type: static
+  #   image: node:20-alpine
+  #   build:
+  #     steps:
+  #       - copy: [package.json, yarn.lock]
+  #       - run: yarn install --immutable
+  #       - copy: [next.config.mjs, tsconfig.json]
+  #       - copy: public/
+  #       - copy: src/
+  #       - run: yarn build
+  #       - directory: build/
+routes:
+  - target:
+      component: NextSite
