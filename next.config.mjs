@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    distDir: 'build',
-    // NOTE: to enable static only next.js hosting uncomment the following
-    // output: 'export'
+    // https://nextjs.org/docs/pages/api-reference/next-config-js/output#automatically-copying-traced-files
+    output: 'standalone',
+    // NOTE: to enable static only next.js hosting set the
+    // `output` value above to 'export'
 };
 
 export default nextConfig;

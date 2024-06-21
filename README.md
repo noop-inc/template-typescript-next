@@ -12,14 +12,7 @@ This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-opti
 
 ## Static Variation
 
-To create an deployment of a Static build, first uncomment the following line in the `next.config.mjs`
-
-
-```js
-...
-output: 'export'
-...
-```
+To create an deployment of a Static build, first set the `output` configuration to `'export'` in the `next.config.mjs` file.
 
 Then, uncomment the static component in the `.noop/blueprint.yaml` file:
 
@@ -29,13 +22,13 @@ Then, uncomment the static component in the `.noop/blueprint.yaml` file:
     image: node:20-alpine
     build:
       steps:
-        - copy: [package.json, yarn.lock]
-        - run: yarn install --immutable
+        - copy: [package.json, package-lock.json]
+        - run: npm ci
         - copy: [next.config.mjs, tsconfig.json]
         - copy: public/
         - copy: src/
-        - run: yarn build
-        - directory: build/
+        - run: npm run build
+        - directory: .next/
 routes:
   - target:
       component: NextStatic # NOTE: updated name here
@@ -45,7 +38,6 @@ routes:
 Finally comment out or remove the Service config:
 
 ```yaml
-...
   # - name: NextSite
   #   type: service
   #   image: node:20-alpine
@@ -55,17 +47,40 @@ Finally comment out or remove the Service config:
   #     # will make it possible to take advantage of cached build
   #     # layers in Noop Workshop (TLDR - speedier subsequent builds!)
   #     steps:
+  #       - directory: /app
   #       # first copy over dependency files and install...
-  #       - copy: [package.json, yarn.lock]
-  #       - run: yarn install --immutable
-  #       # ...then copy over project files before generating build assets
+  #       - copy: [package.json, package-lock.json]
+  #       - run: npm ci
+  #       # ...then copy over project files before generating build assets.
   #       - copy: [next.config.mjs, tsconfig.json]
   #       - copy: public/
   #       - copy: src/
-  #       - run: yarn build
+  #       - run: npm run build
+  #       - run: ls .next
+  #       # A multi-stage build reduces the overall size of the resulting build.
+  #       # A smaller build can result in speedier deployments on Noop Cloud.
+  #       - image: node:20-alpine
+  #         stage: runner
+  #       # Following Dockerfile used as reference for assets to copy over into
+  #       # `runner` stage when Next.js's `standalone` output mode is enabled:
+  #       # https://github.com/vercel/next.js/blob/c0562529dbfcafab252e08bf49d702d4c652aaa1/examples/with-docker/Dockerfile
+  #       - directory: /app
+  #       - copy: /app/public
+  #         destination: ./public
+  #         from: main
+  #       - run: mkdir .next
+  #       - copy: /app/.next/standalone
+  #         destination: ./
+  #         from: main
+  #       - copy: /app/.next/static
+  #         destination: ./.next/static
+  #         from: main
   #   runtime:
-  #     command: yarn start
-...
+  #     command: node server.js
+  #     variables:
+  #       NODE_ENV: "production"
+  #       HOSTNAME: "0.0.0.0"
+  #       PORT: "3000"
 ```
 
 ## Learn More
